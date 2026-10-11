@@ -12,7 +12,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, PollAnswer, User
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
-from tools.db_conn import cur, conn
+from tools.db_conn import fetch_all, fetch_value, execute
 from tools.mongo_queries import update_coins, select_coin
 from data_small import *
 from lg_messages.func import lg_check4_lg_id, lg_checker2
@@ -41,8 +41,7 @@ TIME_WORDS = {
 def build_questions(book, units, from_lg, to_lg):
     questions = []
     for unit in units:
-        cur.execute(f"SELECT {from_lg}, {to_lg} FROM book{book} WHERE unit = %s", (unit,))
-        rows = cur.fetchall()
+        rows = fetch_all(f"SELECT {from_lg}, {to_lg} FROM book{book} WHERE unit = %s", (unit,))
         # wrong options come from the same unit, duplicates would make two identical buttons
         pool = list(dict.fromkeys(answer.strip() for _, answer in rows if answer))
         for word, correct in rows:
@@ -241,14 +240,12 @@ class QuizScene(Scene, state="quiz"):
         else:
             new_coins = old_coins
 
-        cur.execute('SELECT rank FROM users WHERE tg_id = %s', (str(user.id),))
-        row = cur.fetchone()
+        rank_now = fetch_value('SELECT rank FROM users WHERE tg_id = %s', (user.id,), default=0)
         coins_different = new_coins - old_coins
-        all_coins = ((row[0] or 0) if row else 0) + coins_different
+        all_coins = rank_now + coins_different
 
         before = top_all_checker()
-        cur.execute('UPDATE users SET rank = %s WHERE tg_id = %s', (all_coins, str(user.id)))
-        conn.commit()
+        execute('UPDATE users SET rank = %s WHERE tg_id = %s', (all_coins, user.id))
         after = top_all_checker()
         await notify_overtaken(bot, user.id, before, after)
 

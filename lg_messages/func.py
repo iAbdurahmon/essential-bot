@@ -1,6 +1,6 @@
 from aiogram.types import Message, User
 
-from tools.db_conn import cur
+from tools.db_conn import fetch_one
 
 # A reply is built from a dozen translated strings and every one of them used to cost
 # a SELECT. The language of a user changes only through the handlers below, so it is
@@ -9,16 +9,15 @@ _lang_cache = {}
 
 
 def lg_checker2(user_id):
-    user_id = str(user_id)
+    user_id = int(user_id)
     if user_id not in _lang_cache:
-        cur.execute('SELECT lg FROM users WHERE tg_id = %s', (user_id,))
-        row = cur.fetchone()
+        row = fetch_one('SELECT lg FROM users WHERE tg_id = %s', (user_id,))
         _lang_cache[user_id] = row[0] if row else None
     return _lang_cache[user_id]
 
 
 def drop_lang_cache(user_id):
-    _lang_cache.pop(str(user_id), None)
+    _lang_cache.pop(int(user_id), None)
 
 
 def lg_check4_lg_id(eng, rus, uzb, lg):

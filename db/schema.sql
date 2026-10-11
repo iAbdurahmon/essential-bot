@@ -4,15 +4,14 @@ CREATE TABLE IF NOT EXISTS users (
     id         SERIAL PRIMARY KEY,
     name       TEXT,
     username   TEXT,
-    tg_id      TEXT UNIQUE NOT NULL,
-    created_on TEXT,
-    last_use   TEXT,
+    tg_id      BIGINT UNIQUE NOT NULL,
+    created_on TIMESTAMPTZ DEFAULT now(),
+    last_use   TIMESTAMPTZ,
     lg         TEXT,
     status     SMALLINT DEFAULT 1,
     rank       INTEGER DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS users_tg_id_idx ON users (tg_id);
 CREATE INDEX IF NOT EXISTS users_rank_idx ON users (status, rank DESC);
 
 -- changelog posts (/update), "about" posts (/about_update), newsletters (/newsletter).
@@ -20,7 +19,7 @@ CREATE INDEX IF NOT EXISTS users_rank_idx ON users (status, rank DESC);
 -- group and copies it to users, so formatting and media survive untouched.
 CREATE TABLE IF NOT EXISTS sets (
     id      SERIAL PRIMARY KEY,
-    date    TEXT,
+    date    TIMESTAMPTZ DEFAULT now(),
     version TEXT,
     lg      TEXT NOT NULL,
     msg_id  BIGINT NOT NULL
@@ -29,7 +28,7 @@ CREATE TABLE IF NOT EXISTS sets (
 CREATE TABLE IF NOT EXISTS abouts (LIKE sets INCLUDING ALL);
 CREATE TABLE IF NOT EXISTS space (LIKE sets INCLUDING ALL);
 
--- One table per book: 30 units x ~100 words.
+-- One table per book: 30 units x 20 words.
 CREATE TABLE IF NOT EXISTS book1 (
     id   SERIAL PRIMARY KEY,
     unit SMALLINT NOT NULL,

@@ -2,7 +2,7 @@ import logging
 
 from aiogram import Bot
 
-from tools.db_conn import cur
+from tools.db_conn import fetch_all
 from lg_messages.func import lg_check4_lg_id, lg_checker2
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,7 @@ RATING_QUERY = ('SELECT tg_id FROM users WHERE status = 1 '
 
 
 def top_all_checker():
-    cur.execute(RATING_QUERY)
-    return {place: int(row[0]) for place, row in enumerate(cur.fetchall(), 1)}
+    return {place: row[0] for place, row in enumerate(fetch_all(RATING_QUERY), 1)}
 
 
 def top_checker(user_id):

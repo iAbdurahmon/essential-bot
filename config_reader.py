@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     db_host: str = 'localhost'
     db_port: int = 5432
 
-    mongo_user: str = 'admin'
-    mongo_password: SecretStr
+    mongo_user: str = ''
+    mongo_password: SecretStr = SecretStr('')
     mongo_host: str = 'localhost'
     mongo_port: int = 27017
     mongo_auth_db: str = 'admin'
@@ -34,6 +34,8 @@ class Settings(BaseSettings):
 
     @property
     def mongo_uri(self) -> str:
+        if not self.mongo_user:
+            return f"mongodb://{self.mongo_host}:{self.mongo_port}"
         return (f"mongodb://{self.mongo_user}:{self.mongo_password.get_secret_value()}"
                 f"@{self.mongo_host}:{self.mongo_port}/{self.mongo_auth_db}")
 

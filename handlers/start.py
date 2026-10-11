@@ -9,14 +9,14 @@ from aiogram.utils.deep_linking import decode_payload
 from aiogram_dialog import DialogManager
 
 from dialogs.funcs_dialog import top_all_checker, notify_overtaken
-from tools.time_file import timefunc
 from tools.posts import last_post
+from funcs import copy_post
 from data_small import *
 from lg_messages.start_messages import *
 from keyboards.reply import language_selection
 from keyboards.reply import main_buttons
 from utils.states import Form, Func1
-from tools.db_conn import conn, cur
+from tools.db_conn import fetch_one, execute
 from lg_messages.func import lg_check, lg_checker2, lg_check4_lg_id, drop_lang_cache
 from tools.mongo_queries import *
 
@@ -33,9 +33,7 @@ async def reward_inviter(message: Message, bot: Bot, args: str):
     if inviter_id == message.from_user.id:
         return
 
-    # tg_id is stored as text, so the comparison has to be done on a string
-    cur.execute('SELECT tg_id FROM users WHERE tg_id = %s', (str(message.from_user.id),))
-    if cur.fetchone():
+    if fetch_one('SELECT tg_id FROM users WHERE tg_id = %s', (message.from_user.id,)):
         return
 
     invited = select_invite(inviter_id)
@@ -45,8 +43,7 @@ async def reward_inviter(message: Message, bot: Bot, args: str):
     if message.from_user.id in invited:
         return
 
-    cur.execute('SELECT rank FROM users WHERE tg_id = %s', (str(inviter_id),))
-    row = cur.fetchone()
+    row = fetch_one('SELECT rank FROM users WHERE tg_id = %s', (inviter_id,))
     if row is None:
         return
 
@@ -54,9 +51,8 @@ async def reward_inviter(message: Message, bot: Bot, args: str):
     insert_invite(inviter_id, invited)
 
     before = top_all_checker()
-    cur.execute('UPDATE users SET rank = %s WHERE tg_id = %s',
-                ((row[0] or 0) + invite_coin, str(inviter_id)))
-    conn.commit()
+    execute('UPDATE users SET rank = %s WHERE tg_id = %s',
+            ((row[0] or 0) + invite_coin, inviter_id))
     after = top_all_checker()
 
     await notify_overtaken(bot, inviter_id, before, after)
@@ -107,8 +103,7 @@ async def start(message: Message, state: FSMContext):
     if select_invite(message.from_user.id) is None:
         insert_new_invite(message.from_user.id)
 
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s AND status = 1', (str(message.from_user.id),))
-    if cur.fetchone():
+    if fetch_one('SELECT lg FROM users WHERE tg_id = %s AND status = 1', (message.from_user.id,)):
         await state.clear()
         await state.set_state(Func1.choose_option)
         await message.answer(text=lg_check('🔘 Select an option',
@@ -141,11 +136,9 @@ async def language(message: Message, state: FSMContext, bot: Bot):
         return
 
     main_kb = main_buttons(lg_check(btn_en, btn_ru, btn_uz, message), message)
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s', (str(message.from_user.id),))
-    if cur.fetchone():
-        cur.execute('UPDATE users SET lg = %s, status = %s WHERE tg_id = %s',
-                    (lg_value, 1, str(message.from_user.id)))
-        conn.commit()
+    if fetch_one('SELECT lg FROM users WHERE tg_id = %s', (message.from_user.id,)):
+        execute('UPDATE users SET lg = %s, status = %s WHERE tg_id = %s',
+                (lg_value, 1, message.from_user.id))
         drop_lang_cache(message.from_user.id)
         await message.answer(
             text=lg_check('✅ You have successfully updated the language!',
@@ -156,12 +149,10 @@ async def language(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(Func1.choose_option)
         return
 
-    today_time = f"{timefunc('today')}/{timefunc('time')}"
-    cur.execute('INSERT INTO users (name, username, tg_id, created_on, lg, status) '
-                'VALUES (%s, %s, %s, %s, %s, %s)',
-                (message.from_user.first_name, message.from_user.username,
-                 message.from_user.id, today_time, lg_value, 1))
-    conn.commit()
+    execute('INSERT INTO users (name, username, tg_id, created_on, lg, status) '
+            'VALUES (%s, %s, %s, now(), %s, %s)',
+            (message.from_user.first_name, message.from_user.username,
+             message.from_user.id, lg_value, 1))
     drop_lang_cache(message.from_user.id)
     insert_new(message.from_user.id)
     await message.answer(text=lg_check('✅ You have successfully selected the language!',
@@ -175,5 +166,5 @@ async def about(message: Message, state: FSMContext, bot: Bot):
     version, msg_ids = last_post('abouts')
     if msg_ids:
         lg = lg_checker2(message.from_user.id)
-        await bot.copy_message(message.from_user.id, group, msg_ids.get(lg, msg_ids['en']))
+        await copy_post(bot, message.from_user.id, msg_ids.get(lg, msg_ids['en']))
     await state.set_state(Func1.choose_option)

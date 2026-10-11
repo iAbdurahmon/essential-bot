@@ -7,7 +7,7 @@ from utils.states import Func1, WordList
 from lg_messages.func import lg_check3, lg_checker2
 from keyboards.reply import func_kb2
 from keyboards.builders import units_inline
-from tools.db_conn import cur
+from tools.db_conn import fetch_all
 
 router = Router()
 
@@ -52,8 +52,7 @@ async def list_words(callback: CallbackQuery):
     translation = lg_reductions.get(lg, 'eng')
 
     # eng is always the left side: the bot teaches English through the user's own language
-    cur.execute(f"SELECT eng, {translation} FROM book{book} WHERE unit = %s ORDER BY id", (unit,))
-    rows = cur.fetchall()
+    rows = fetch_all(f"SELECT eng, {translation} FROM book{book} WHERE unit = %s ORDER BY id", (unit,))
     if not rows:
         await callback.answer(lg_check3("There are no words for this unit yet.",
                                         "Для этого unit пока нет слов.",

@@ -3,7 +3,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from keyboards.reply import row1, language_selection
-from tools.db_conn import cur
+from tools.db_conn import fetch_all
 from utils.states import Profile, Form
 from data_small import *
 from dialogs.funcs_dialog import TOP_SIZE
@@ -32,9 +32,8 @@ async def language_choose(message: Message, state: FSMContext):
 
 @router.message(Profile.profile_start, F.text.in_(rating_btn_all))
 async def top_users(message: Message, state: FSMContext):
-    cur.execute('SELECT name, username, tg_id, rank FROM users WHERE status = 1 '
-                'ORDER BY CASE WHEN rank IS NULL THEN 1 ELSE 0 END, rank DESC')
-    result = cur.fetchall()
+    result = fetch_all('SELECT name, username, tg_id, rank FROM users WHERE status = 1 '
+                       'ORDER BY CASE WHEN rank IS NULL THEN 1 ELSE 0 END, rank DESC')
 
     creator_text = lg_check("👨🏻‍💻 Admin", "👨🏻‍💻 Админ", "👨🏻‍💻 Admin", message)
     you_text = lg_check("You", "Вы", "Siz", message)
@@ -43,16 +42,16 @@ async def top_users(message: Message, state: FSMContext):
         name, username, tg_id, rank = row
         handle = f" - @{username}" if username else ''
         mark = ''
-        if int(tg_id) in admins:
+        if tg_id in admins:
             mark = f" <i>({creator_text})</i>"
-        elif tg_id == str(message.from_user.id):
+        elif tg_id == message.from_user.id:
             mark = f" <i>({you_text})</i>"
         return f"<b>{place}.</b> {name}{handle}: <b>{rank or 0} coins</b>{mark}\n"
 
     top_text = ''
     my_place = None
     for place, row in enumerate(result, 1):
-        if row[2] == str(message.from_user.id):
+        if row[2] == message.from_user.id:
             my_place = place
         if place <= TOP_SIZE:
             top_text += row_text(place, row)

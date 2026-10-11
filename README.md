@@ -1,9 +1,14 @@
 # Essential Words Bot
 
-A Telegram bot for learning English vocabulary, built with aiogram 3. It ran in
-production as [@essentialwordstestbot](https://t.me/essentialwordstestbot) with a
-three-language interface (English, Russian, Uzbek), a quiz built on native Telegram
-polls, a coin-based rating, PDF delivery of study units and a referral system.
+A Telegram bot for learning English vocabulary, built with aiogram 3. Written in 2024 and
+running as [@essentialwordstestbot](https://t.me/essentialwordstestbot): a three-language
+interface (English, Russian, Uzbek), a quiz built on native Telegram polls, a coin-based
+rating, PDF delivery of study units and a referral system.
+
+This repository is the cleaned-up public version of it — credentials moved out of the code,
+the duplicated parts collapsed, and the schema and setup written down so it can actually be
+run by someone else. `db/migrations/` has what it takes to bring a database created by the
+first version up to the current schema.
 
 ## What it does
 
@@ -59,27 +64,42 @@ lets a restart or two parallel sessions not interfere with each other.
 
 ## Running it
 
+You need a bot token from [@BotFather](https://t.me/BotFather), a Telegram group for the
+bot to keep its posts in, and the four required values in `.env`. Everything else has a
+working default — see `.env.example`.
+
 ```bash
-cp .env.example .env     # fill in BOT_TOKEN, passwords, ADMIN_ID, ADMIN_GROUP
+cp .env.example .env     # BOT_TOKEN, DB_PASSWORD, ADMIN_ID, ADMIN_GROUP
 docker compose up --build
 ```
 
-`db/schema.sql` and `db/seed_demo.sql` are applied automatically on the first start, so
-the quiz and the word list work out of the box on the demo vocabulary.
+`db/schema.sql` and `db/seed_demo.sql` are applied on the first start, so the quiz and the
+word list work out of the box on the demo vocabulary.
 
-Without Docker:
+Without Docker you need PostgreSQL, MongoDB and Redis running locally:
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+createdb essential
 psql -d essential -f db/schema.sql -f db/seed_demo.sql
 python main.py
 ```
 
-`ADMIN_GROUP` is a Telegram group the bot is a member of. The changelog pipeline keeps
-message ids rather than text: an admin posts the three language versions of a release note
-into that group, and the bot copies the right one to each user, so formatting and media
-survive untouched.
+The translator is the only part that needs something external — a Google Cloud project
+with the Translation API and a service-account key. Leave `GOOGLE_PROJECT` empty and the
+bot tells the user that the translator is not configured instead of failing.
+
+PDF delivery expects the unit files under `data/book_units/` as `{lang}_{book}_{unit}.pdf`,
+and whole books by their Telegram `file_id` in `data_small.py`. Neither is in the
+repository (see the note below); the rest of the bot works without them.
+
+### How the changelog pipeline works
+
+The bot does not store post text. An admin sends `/update 1.3` in the admin group followed
+by three messages — English, Russian, Uzbek — and the bot saves their `message_id`s. On
+`/send` it copies the matching one to every user, so formatting, media and buttons survive
+untouched. `/about_update` and `/newsletter` work the same way against their own tables.
 
 ## Layout
 
@@ -97,7 +117,7 @@ tools/               database connections, PDF merging, Mongo queries, time help
 db/                  schema and demo data
 ```
 
-## A note on content
+## A note on the content
 
 The bot was built around a commercial vocabulary series, and that material is not part of
 this repository: `data/book_units/` is gitignored and `db/seed_demo.sql` carries twenty

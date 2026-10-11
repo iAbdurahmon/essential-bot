@@ -1,6 +1,6 @@
 import logging
 
-from tools.db_conn import collection, cur
+from tools.db_conn import collection, fetch_one
 
 logger = logging.getLogger(__name__)
 
@@ -43,19 +43,17 @@ def update_coins(tg_id, book, unit, coins):
 
 
 def insert_new(tg_id):
-    cur.execute('SELECT * FROM users WHERE tg_id = %s', (f"{tg_id}",))
-    rows = cur.fetchall()
-
-    for row in rows:
-        user_data = {
+    row = fetch_one('SELECT id, name, username, tg_id, created_on, lg FROM users WHERE tg_id = %s',
+                    (tg_id,))
+    if row:
+        collection.insert_one({
             "user_id": row[0],
             "name": row[1],
             "username": row[2],
-            "tg_id": int(row[3]),
-            "created_on": row[4],
-            "lg": row[6]
-        }
-        collection.insert_one(user_data)
+            "tg_id": row[3],
+            "created_on": row[4].isoformat() if row[4] else None,
+            "lg": row[5]
+        })
 
     new_posts = []
     for i in range(1, 7):

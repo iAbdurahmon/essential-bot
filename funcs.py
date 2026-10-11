@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.deep_linking import create_start_link
@@ -10,6 +12,7 @@ from Poll import polling
 from tools.posts import last_post
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.message(Func1.choose_option, F.text.in_(book_btn_all))
@@ -47,6 +50,17 @@ async def book(message: Message, state: FSMContext):
     await state.set_state(Func1.choose_book)
 
 
+async def copy_post(bot: Bot, chat_id: int, msg_id: int) -> bool:
+    # the post lives in the admin group; it can be deleted there, or the bot can be
+    # removed from the group, and neither should break the handler that copies it
+    try:
+        await bot.copy_message(chat_id, group, msg_id)
+        return True
+    except Exception as e:
+        logger.warning('could not copy post %s from the admin group: %s', msg_id, e)
+        return False
+
+
 async def bot_version(message: Message, bot: Bot):
     version, msg_ids = last_post('sets')
     if not msg_ids:
@@ -61,7 +75,7 @@ async def bot_version(message: Message, bot: Bot):
         message
     ), parse_mode='html')
     lg = lg_checker2(message.from_user.id)
-    await bot.copy_message(message.from_user.id, group, msg_ids.get(lg, msg_ids['en']))
+    await copy_post(bot, message.from_user.id, msg_ids.get(lg, msg_ids['en']))
 
 
 async def invite_link(message: Message, bot: Bot):
