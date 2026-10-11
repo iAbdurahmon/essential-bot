@@ -1,0 +1,23 @@
+# secrets
+.env
+*.json
+!data/*.json
+
+# book content (copyrighted, not for distribution)
+data/book_units/
+data/user_pdf/
+
+# logs
+logs/
+*.log
+
+# python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# ide / os
+.idea/
+.vscode/
+.DS_Store
