@@ -1,4 +1,8 @@
+import logging
+
 from tools.db_conn import collection, cur
+
+logger = logging.getLogger(__name__)
 
 
 def select_coin(tg_id, book, unit):
@@ -73,10 +77,8 @@ def insert_new(tg_id):
         upsert=True
     )
 
-    if result.modified_count > 0:
-        print("Данные успешно обновлены")
-    else:
-        print("Ошибка: данные не обновлены")
+    if not result.modified_count:
+        logger.warning('balance was not initialised for %s', tg_id)
 
 
 def select_invite(tg_id):
@@ -86,11 +88,8 @@ def select_invite(tg_id):
     )
 
     if result:
-        new_result = result.get('invite')
-        return new_result
-    else:
-        print("ERROR: No result found for tg_id", tg_id)
-        return None
+        return result.get('invite')
+    return None
 
 
 def insert_invite(tg_id, data):
@@ -104,11 +103,10 @@ def insert_invite(tg_id, data):
 
 def insert_new_invite(tg_id):
     new_posts = []
-    result = collection.update_one(
+    collection.update_one(
         {"tg_id": tg_id},
         {"$set": {"invite": new_posts}},
         upsert=True
     )
-    print(result)
 
 

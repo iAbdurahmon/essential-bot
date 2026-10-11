@@ -1,23 +1,18 @@
 import operator
 
-from aiogram import Router, F
 from aiogram.filters.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message
-from aiogram.fsm.scene import SceneRegistry
-from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
+from aiogram.types import CallbackQuery
 
-from aiogram_dialog import Dialog, DialogManager, Window, StartMode
-from aiogram_dialog.widgets.kbd import Multiselect, Group, Button, Row, Radio, Toggle
+from aiogram_dialog import Dialog, DialogManager, Window
+from aiogram_dialog.widgets.kbd import Multiselect, Group, Button, Row, Toggle
 from aiogram_dialog.widgets.text import Format
 
-from lg_messages.func import lg_check2, lg_checker2, lg_check, lg_check3
+from lg_messages.func import lg_check2, lg_checker2, lg_check3
 from data_small import *
+from dialogs.dialog import russian_not_ready
 from dialogs.main_poll import QuizScene, router_poll
 from utils.states import *
 from keyboards.reply import buttons3_custom_no_message
-
-router = Router()
 
 
 class Poll_manager(StatesGroup):
@@ -39,22 +34,17 @@ async def get_data(**kwargs):
     from_text = await lg_check2("From", "С", 'dan', user_info)
     to_text = await lg_check2("To", "На", "ga", user_info)
 
-    toggle_lang_from = None
-    toggle_lang_to = None
-
-    lang_user = lg_checker2(user_info.id)
-
-    if lang_user == 'uz':
-        toggle_lang_from = [(f'{lg_en}{from_text}', 'en'), (f'{lg_ru}{from_text}', 'ru'), (f'{lg_uz}{from_text}', 'uz')]
-        toggle_lang_to = [(f'{lg_uz}{to_text}', 'uz'), (f'{lg_en}{to_text}', 'en'), (f'{lg_ru}{to_text}', 'ru')]
-    elif lang_user == 'en':
+    # Uzbek puts the case suffix after the language name, the other two before it
+    if lg_checker2(user_info.id) == 'uz':
+        toggle_lang_from = [(f'{lg_en}{from_text}', 'en'), (f'{lg_ru}{from_text}', 'ru'),
+                            (f'{lg_uz}{from_text}', 'uz')]
+        toggle_lang_to = [(f'{lg_uz}{to_text}', 'uz'), (f'{lg_en}{to_text}', 'en'),
+                          (f'{lg_ru}{to_text}', 'ru')]
+    else:
         toggle_lang_from = [(f'{from_text}: {lg_en}', 'en'), (f'{from_text}: {lg_ru}', 'ru'),
                             (f'{from_text}: {lg_uz}', 'uz')]
-        toggle_lang_to = [(f'{to_text}: {lg_uz}', 'uz'), (f'{to_text}: {lg_en}', 'en'), (f'{to_text}: {lg_ru}', 'ru')]
-    elif lang_user == 'ru':
-        toggle_lang_from = [(f'{from_text}: {lg_en}', 'en'), (f'{from_text}: {lg_ru}', 'ru'),
-                            (f'{from_text}: {lg_uz}', 'uz')]
-        toggle_lang_to = [(f'{to_text}: {lg_ru}', 'ru'), (f'{to_text}: {lg_uz}', 'uz'), (f'{to_text}: {lg_en}', 'en'), ]
+        toggle_lang_to = [(f'{to_text}: {lg_uz}', 'uz'), (f'{to_text}: {lg_en}', 'en'),
+                          (f'{to_text}: {lg_ru}', 'ru')]
 
     return {"buttons_data": buttons_data,
             "lg": send_message,
@@ -77,16 +67,7 @@ async def algorithm(callback: CallbackQuery, button: Button,
 
 async def start_poll(callback: CallbackQuery, button: Button,
                      dialog_manager: DialogManager):
-    widget1 = dialog_manager.find('toogle_lang_from')
-    widget2 = dialog_manager.find('toogle_lang_to')
-    checked_from = widget1.get_checked()
-    checked_to = widget2.get_checked()
-    lang = lg_checker2(callback.from_user.id)
-
-    unit_widget = dialog_manager.find('units_poll')
-    units = unit_widget.get_checked()
-    units_int = [int(i) for i in units]
-
+    units = dialog_manager.find('units_poll').get_checked()
     if not units:
         unit_error = await lg_check2("❌ Please select at least one unit!",
                                      "❌ Пожалуйста, выберите хотя бы один unit",
@@ -95,98 +76,47 @@ async def start_poll(callback: CallbackQuery, button: Button,
         await callback.answer(unit_error, show_alert=True)
         return
 
-    if not checked_to and not checked_from:
-        if lang == 'en':
-            checked_from = 'en'
-            checked_to = 'uz'
-        else:
-            checked_from = 'en'
-            checked_to = lang
-    else:
-        pass
-    if not checked_from:
-        checked_from = 'en'
+    lang = lg_checker2(callback.from_user.id)
+    checked_from = dialog_manager.find('toogle_lang_from').get_checked() or 'en'
+    checked_to = dialog_manager.find('toogle_lang_to').get_checked()
     if not checked_to:
-        if lang != 'ru':
-            checked_to = 'uz'
-        else:
-            checked_to = lang
+        checked_to = lang if lang != 'en' else 'uz'
 
-    if checked_from == 'en':
-        if checked_to == 'en':
-            text = await lg_check2("You can't use English languages together at the same time!",
-                                   'Нельзя использовать английские языкы вместе одновременно!',
-                                   "Ingliz tillarni bir vaqtda birga ishlatib bo'lmaydi!", callback.from_user)
-            await callback.answer(text, show_alert=True)
-            return
-    elif checked_from == 'ru':
-        if checked_to == 'uz':
-            text = await lg_check2("You can't use Russian language together with Uzbek at the same time!",
-                                   "Нельзя использовать русский язык вместе с узбекским одновременно!",
-                                   "Rus va o'zbek tillarni bir vaqtda birga ishlatib bo'lmaydi!", callback.from_user)
-            await callback.answer(text, show_alert=True)
-            return
-        if checked_to == 'ru':
-            text = await lg_check2("You can't use Russian languages together at the same time!",
-                                   'Нельзя использовать русские языки вместе одновременно!',
-                                   "Rus tillarni bir vaqtda birga ishlatib bo'lmaydi!", callback.from_user)
-            await callback.answer(text, show_alert=True)
-            return
-    elif checked_from == 'uz':
-        if checked_to == 'ru':
-            text = await lg_check2("You can't use Uzbek language together with Russian at the same time!",
-                                   'Нельзя использовать узбекский язык вместе с русским одновременно!',
-                                   "O'zbek va rus tillarni bir vaqtda ishlatib bo'lmaydi!", callback.from_user)
-            await callback.answer(text, show_alert=True)
-            return
-        if checked_to == 'uz':
-            text = await lg_check2("You can't use Uzbek languages together at the same timee!",
-                                   'Нельзя использовать узбекские языки вместе одновременно!',
-                                   "O'zbek tillarni bir vaqtda birga ishlatib bo'lmaydi!", callback.from_user)
-            await callback.answer(text, show_alert=True)
-            return
-    # data_for_lg['from'] = checked_from
-    # data_for_lg['to'] = checked_to
-    #
-    # for i in units_int:
-    #     unit_selected.append(i)
-    #
-    # book_selected.append(dialog_manager.start_data[0])
-
-    book = dialog_manager.start_data[0]
-
-    if not (book == '1' or book == '2') and (checked_from == 'ru' or checked_to == 'ru'):
-        text = await lg_check2("Since we do the Russian translation manually, at the moment only operations from the first book work.\n"
-                               "Follow the news on the channel: @essentialwordchannel",
-                               'Так как русский перевод мы делаем вручную, на данный момент только работают операции с первой книги.\n'
-                               'Следите за новостями на канале: @essentialwordchannel',
-                               "Rus tiliga tarjimani o'zimiz qilganimiz uchun, hozircha faqat birinchi kitob bilan ishlashingiz mumkin.\n"
-                               "Yangiliklarni kanalda kuzating: @essentialwordchannel", callback.from_user)
+    if checked_from == checked_to:
+        text = await lg_check2("You can't use the same language on both sides!",
+                               'Нельзя использовать один и тот же язык с двух сторон!',
+                               "Bir xil tilni ikki tomonda ishlatib bo'lmaydi!", callback.from_user)
         await callback.answer(text, show_alert=True)
         return
 
-    wrem_list = []
-    for i in units_int:
-        wrem_list.append(i)
-        user_data[callback.from_user.id] = {'from': checked_from, 'to': checked_to,
-                                            'book': book, 'units': wrem_list}
+    # the word tables are English-centred: ru <-> uz pairs have no data behind them
+    if 'en' not in (checked_from, checked_to):
+        text = await lg_check2("One of the two languages has to be English!",
+                               'Один из двух языков должен быть английским!',
+                               "Ikki tildan biri ingliz tili bo'lishi kerak!", callback.from_user)
+        await callback.answer(text, show_alert=True)
+        return
 
-    unit_selected_text_comma = ''
-    data = user_data.get(callback.from_user.id)
-    unit_selected = data.get('units')
-    for i in unit_selected:
-        unit_selected_text_comma += f"{i}, "
-    unit_selected_text = unit_selected_text_comma.rstrip(', ')
+    book = dialog_manager.start_data['book']
+    if 'ru' in (checked_from, checked_to) and await russian_not_ready(callback, book, 'ru'):
+        return
+
+    units_int = [int(i) for i in units]
+    user_data[callback.from_user.id] = {'from': checked_from, 'to': checked_to,
+                                        'book': book, 'units': units_int}
+
+    unit_selected_text = ', '.join(str(i) for i in units_int)
+    languages_text = f"{lg_keys.get(checked_from)} ➡ {lg_keys.get(checked_to)}"
 
     en_pretext = (f"📕 Selected book: {book}\n"
                   f"🖇️ Selected units: {unit_selected_text}\n"
-                  f"🌐 Selected languages: {lg_keys.get(checked_from)} ➡ {lg_keys.get(checked_to)}\n\n{ready_text_en}")
+                  f"🌐 Selected languages: {languages_text}\n\n{ready_text_en}")
     ru_pretext = (f"📕 Выбранная книга: {book}\n"
                   f"🖇️ Выбранные unit: {unit_selected_text}\n"
-                  f"🌐 Выбранные языки: {lg_keys.get(checked_from)} ➡ {lg_keys.get(checked_to)}\n\n{ready_text_ru}")
+                  f"🌐 Выбранные языки: {languages_text}\n\n{ready_text_ru}")
     uz_pretext = (f"📕 Tanlangan  kitob: {book}\n"
                   f"🖇️ Tanlangan unitlar: {unit_selected_text}\n"
-                  f"🌐 Tanlangan tillar: {lg_keys.get(checked_from)} ➡ {lg_keys.get(checked_to)}\n\n{ready_text_uz}")
+                  f"🌐 Tanlangan tillar: {languages_text}\n\n{ready_text_uz}")
 
     await callback.message.answer(lg_check3(en_pretext, ru_pretext, uz_pretext, callback.from_user),
                                   reply_markup=buttons3_custom_no_message(
@@ -205,7 +135,7 @@ async def start_poll(callback: CallbackQuery, button: Button,
 
 dialog = Dialog(
     Window(
-        Format('{book_name} {start_data[0]}:'),
+        Format('{book_name} {start_data[book]}:'),
         Row(
             Toggle(
                 Format('{item[0]}'),

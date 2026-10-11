@@ -1,1 +1,1 @@
-from . import dialog, poll, funcs_dialog
+from . import dialog, poll, main_poll, funcs_dialog

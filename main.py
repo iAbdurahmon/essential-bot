@@ -1,7 +1,6 @@
-print('starting')
-import os
 import asyncio
 import logging
+import os
 from logging.handlers import TimedRotatingFileHandler
 
 from aiogram import Bot, Dispatcher
@@ -19,12 +18,37 @@ from Funcs import books
 from Poll import polling
 from dialogs import dialog, poll, main_poll
 from dialogs.main_poll import QuizScene
-from data_small import admins
 from middlewares.is_online import IsOnline
+
+LOG_DIR = 'logs'
+LOG_FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+
+logger = logging.getLogger(__name__)
+
+
+def logging_setup():
+    os.makedirs(LOG_DIR, exist_ok=True)
+    formatter = logging.Formatter(LOG_FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+
+    file_handler = TimedRotatingFileHandler(
+        filename=os.path.join(LOG_DIR, 'bot.log'),
+        when='midnight',
+        backupCount=14,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(formatter)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    logging.basicConfig(level=config.log_level, handlers=[file_handler, console_handler])
+    # these two are chatty at DEBUG and say nothing useful at INFO
+    logging.getLogger('aiogram.event').setLevel(logging.WARNING)
+    logging.getLogger('aiogram_dialog').setLevel(logging.WARNING)
 
 
 def dp_setup():
-    storage = RedisStorage.from_url('redis://localhost:6379/0', key_builder=DefaultKeyBuilder(with_destiny=True))
+    storage = RedisStorage.from_url(config.redis_url, key_builder=DefaultKeyBuilder(with_destiny=True))
     dp = Dispatcher(storage=storage,
                     events_isolation=SimpleEventIsolation())
     dp.message.middleware.register(IsOnline())
@@ -40,10 +64,7 @@ def dp_setup():
                        profile.router,
                        dialog.dialog,
                        poll.dialog,
-                       # main_poll.router_poll
-                       )
-    dp.include_router(main_poll.router_poll)
-    # dp.include_router(poll.router)
+                       main_poll.router_poll)
     setup_dialogs(dp)
     scene_registry = SceneRegistry(dp)
     scene_registry.add(QuizScene)
@@ -51,51 +72,19 @@ def dp_setup():
 
 
 async def main():
-    try:
-        print('launching main')
-        dp = dp_setup()
-        bot = Bot(
-            token=config.bot_token.get_secret_value(),
-            default=DefaultBotProperties(parse_mode='HTML')
-        )
-        await bot.delete_webhook(drop_pending_updates=True)
-        await dp.start_polling(bot)
-    except Exception as e:
-        print(f"Ошибка: {e}")  # Выведет ошибку в консоль
-        logging.exception("Ошибка в боте")  # Запишет в логи
-
+    dp = dp_setup()
+    bot = Bot(
+        token=config.bot_token.get_secret_value(),
+        default=DefaultBotProperties(parse_mode='HTML')
+    )
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info('bot started')
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
-    def get_filename(filename):
-        log_directory = os.path.split(filename)[0]
-        date = os.path.splitext(filename)[1][1:]
-        filename = os.path.join(log_directory, date)
-
-        if not os.path.exists('{}.log'.format(filename)):
-            return '{}.log'.format(filename)
-        index = 0
-        f = '{}.{}.log'.format(filename, index)
-        while os.path.exists(f):
-            index += 1
-            f = '{}.{}.log'.format(filename, index)
-        return f
-
-    file_handler = TimedRotatingFileHandler(filename='logs/debug.log', when='midnight', interval=1, backupCount=0)
-    file_handler.suffix = '%Y%m%d'
-    file_handler.namer = get_filename
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(
-        logging.Formatter('%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s', datefmt='%H:%M:%S'))
-
-    logging.getLogger().addHandler(file_handler)
-
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    console_handler.setFormatter(
-        logging.Formatter('%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s', datefmt='%H:%M:%S'))
-
-    logging.getLogger().addHandler(console_handler)
-    asyncio.run(main())
+    logging_setup()
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info('bot stopped')

@@ -24,15 +24,11 @@ async def book(message: Message, state: FSMContext):
 
 @router.message(Poll_state.dialog_start, F.text.in_(book_names_all))
 async def dialog_start_for_poll(message: Message, state: FSMContext, dialog_manager: DialogManager):
-    text = message.text[-1]
     text_list = [lg_check("🔙 Back", "🔙 Назад", "🔙 Orqaga", message),
                  lg_check("🏠 Main Menu", "🏠 Главное Меню", "🏠 Asosiy Menyu", message)]
 
-    message_text = await message.answer(lg_check("Choose the Units", "Выберите Unit", "Unitlarni tanlang", message),
-                                        reply_markup=func_kb(text_list, message))
-
-    message_id = message_text.message_id
-    text_for_edit['editer'] = message_id
+    menu = await message.answer(lg_check("Choose the Units", "Выберите Unit", "Unitlarni tanlang", message),
+                                reply_markup=func_kb(text_list, message))
     await state.set_state(Poll_state.dialog_started)
-    data = [text]
-    await dialog_manager.start(Poll_manager.unit_select, mode=StartMode.RESET_STACK, data=data)
+    await dialog_manager.start(Poll_manager.unit_select, mode=StartMode.RESET_STACK,
+                               data={'book': message.text[-1], 'menu_msg_id': menu.message_id})

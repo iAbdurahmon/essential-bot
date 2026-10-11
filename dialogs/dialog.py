@@ -1,12 +1,11 @@
 import operator
 import asyncio
+import logging
 import os
-import time
 
 from contextlib import suppress
 from typing import Any
 
-from aiogram import Router
 from aiogram.filters.state import StatesGroup, State
 from aiogram.types import CallbackQuery, ContentType
 from aiogram.exceptions import TelegramBadRequest
@@ -22,7 +21,10 @@ from tools.pdf import pdf_setup, pdf_namer
 from data_small import *
 from keyboards.reply import func_kb2
 
-router = Router()
+logger = logging.getLogger(__name__)
+
+# Russian units are translated by hand, only the first two books are ready
+RU_READY_BOOKS = ('1', '2')
 
 
 class Unit(StatesGroup):
@@ -61,67 +63,52 @@ async def get_bg_data(dialog_manager: DialogManager, **kwargs):
 
 
 async def send_getter(dialog_manager: DialogManager, **kwargs):
-    units = dialog_manager.start_data.get('units')
-    unit_text = ', '.join('#u' + str(unit) for unit in units)
-    point_mg = dialog_manager.start_data.get('point')
-    point_cm_mg = dialog_manager.start_data.get('point_cm')
+    data = dialog_manager.start_data
     return {
-        "data": dialog_manager.start_data,
-        "back_mg_get": dialog_manager.start_data,
-        "main_mg_get": dialog_manager.start_data,
-        "book_mg": dialog_manager.start_data,
-        "units_mg": unit_text,
-        "book_name_mg": dialog_manager.start_data,
-        "point_mg": point_mg,
-        "point_cm_mg": point_cm_mg
+        "data": data,
+        "units_mg": ', '.join('#u' + str(unit) for unit in data['units']),
+        "book_mg": data,
+        "book_name_mg": data
     }
+
+
+async def russian_not_ready(event: CallbackQuery, book: str, lang: str) -> bool:
+    if book in RU_READY_BOOKS or lang != 'ru':
+        return False
+    text = await lg_check2(
+        "Since we do the Russian translation manually, at the moment only operations from the Book 1 and Book 2 work.\n"
+        "Follow the news on the channel: @essentialwordchannel",
+        'Так как русский перевод мы делаем вручную, на данный момент только работают операции с первой и второй книги.\n'
+        'Следите за новостями на канале: @essentialwordchannel',
+        "Rus tiliga tarjimani o'zimiz qilganimiz uchun, hozircha faqat birinchi va ikkinchi kitoblar bilan ishlashingiz mumkin.\n"
+        "Yangiliklarni kanalda kuzating: @essentialwordchannel", event.from_user)
+    await event.answer(text, show_alert=True)
+    return True
 
 
 async def book_sender(callback: CallbackQuery, button: Button,
                       manager: DialogManager):
-    widget_lang = manager.find('lang')
-    lang = widget_lang.get_checked()
-    book_name = manager.start_data[0]
-    if not (book_name == '1' or book_name == '2') and lang == 'ru':
-        text = await lg_check2(
-            "Since we do the Russian translation manually, at the moment only operations from the Book 1 and Book 2 work.\n"
-            "Follow the news on the channel: @essentialwordchannel",
-            'Так как русский перевод мы делаем вручную, на данный момент только работают операции с первой и второй книги.\n'
-            'Следите за новостями на канале: @essentialwordchannel',
-            "Rus tiliga tarjimani o'zimiz qilganimiz uchun, hozircha faqat birinchi va ikkinchi kitoblar bilan ishlashingiz mumkin.\n"
-            "Yangiliklarni kanalda kuzating: @essentialwordchannel", callback.from_user)
-        await callback.answer(text, show_alert=True)
+    book_name = manager.start_data['book']
+    lang = manager.find('lang').get_checked()
+    if await russian_not_ready(callback, book_name, lang):
         return
-    if lang == 'uz':
-        book_id = book_ids_uz.get(int(book_name))
-        await callback.message.answer_document(book_id)
-        await callback.bot.send_message(group,
-                                     f'#fileBook{book_name}\n{callback.from_user.first_name} - @{callback.from_user.username} - {callback.from_user.id}')
-    elif lang == 'en':
-        book_id = book_ids_en.get(int(book_name))
-        await callback.message.answer_document(book_id)
-    elif lang == 'ru':
-        book_id = book_ids_ru.get(int(book_name))
-        await callback.message.answer_document(book_id)
+
+    book_ids = {'en': book_ids_en, 'ru': book_ids_ru, 'uz': book_ids_uz}[lang]
+    book_id = book_ids.get(int(book_name))
+    if not book_id:
+        await callback.answer('This book is not uploaded yet.', show_alert=True)
+        return
+    await callback.message.answer_document(book_id)
 
 
 async def ok_button(event: CallbackQuery, button: Button,
                     manager: DialogManager):
-    book = manager.start_data[0]
-    widget_lang = manager.find('lang')
-    lang = widget_lang.get_checked()
-    print('button')
-    if not (book == '1' or book == '2') and lang == 'ru':
-        text = await lg_check2("Since we do the Russian translation manually, at the moment only operations from the Book 1 and Book 2 work.\n"
-                               "Follow the news on the channel: @essentialwordchannel",
-                               'Так как русский перевод мы делаем вручную, на данный момент только работают операции с первой и второй книги.\n'
-                               'Следите за новостями на канале: @essentialwordchannel',
-                               "Rus tiliga tarjimani o'zimiz qilganimiz uchun, hozircha faqat birinchi va ikkinchi kitoblar bilan ishlashingiz mumkin.\n"
-                               "Yangiliklarni kanalda kuzating: @essentialwordchannel", event.from_user)
-        await event.answer(text, show_alert=True)
+    book = manager.start_data['book']
+    lang = manager.find('lang').get_checked()
+    if await russian_not_ready(event, book, lang):
         return
-    widget = manager.find('units')
-    checked = widget.get_checked()
+
+    checked = manager.find('units').get_checked()
     if not checked:
         unit_error = await lg_check2("❌ Please select at least one unit!",
                                      "❌ Пожалуйста, выберите хотя бы один unit",
@@ -129,69 +116,55 @@ async def ok_button(event: CallbackQuery, button: Button,
                                      event.from_user)
         await event.answer(unit_error, show_alert=True)
         return
-    await manager.update({'progress': 20})
-    await manager.update({'progress': 30})
-    await manager.update({'progress': 40})
+
+    user_id = event.from_user.id
     await manager.switch_to(Unit.load)
-    await manager.update({'progress': 50})
-    file_name = pdf_namer(checked, lang)
-    await manager.update({'progress': 60})
-    await asyncio.create_task(send_func(manager.bg(), checked, book, lang))
-    await manager.update({'progress': 70})
+    await manager.update({'progress': 30})
+
+    # merging a few dozen PDF pages is CPU-bound, a thread keeps the bot responsive
     try:
-        message_id = text_for_edit['editer']
-    except Exception as e:
-        await event.answer("Error 404. Try again!", show_alert=True)
-        for admin in admins:
-            await event.bot.send_message(admin, f"{e} for user: {event.from_user.id}")
+        file_name = await asyncio.to_thread(pdf_setup, checked, book, lang, user_id)
+    except FileNotFoundError:
+        logger.warning('missing unit file for book %s, lang %s, units %s', book, lang, checked)
+        await event.answer('Some of these units are not uploaded yet.', show_alert=True)
+        await manager.done()
         return
-    with suppress(TelegramBadRequest):
-        await event.bot.delete_message(event.message.chat.id, message_id)
     await manager.update({'progress': 80})
-    back_mg = lg_check3('🔙 Back', '🔙 Назад', '🔙 Orqaga', event.from_user)
-    await manager.update({'progress': 85})
-    main_mg = lg_check3('🏠 Main Menu', '🏠 Главное Меню', '🏠 Asosiy Menyu', event.from_user)
-    await manager.update({'progress': 80})
-    book_name = lg_check3('Book', 'Книга',  'Kitob', event.from_user)
-    await manager.update({'progress': 90})
+
+    menu_msg_id = manager.start_data.get('menu_msg_id')
+    if menu_msg_id:
+        with suppress(TelegramBadRequest):
+            await event.bot.delete_message(event.message.chat.id, menu_msg_id)
+
+    back_menu = lg_check3(back_menu_en, back_menu_ru, back_menu_uz, event.from_user)
     data_dict = {'path': file_name,
-                 'back_mg': back_mg,
-                 'main_mg': main_mg,
                  'book': book,
                  'units': checked,
-                 'book_name': book_name}
+                 'book_name': lg_check3('Book', 'Книга', 'Kitob', event.from_user)}
     await manager.update({'progress': 100})
-    send_mg = await event.message.answer(lg_check3('📤 Sending...', '📤 Отправка...', "📤 Jo'natilmoqda...", event.from_user),
-                                         reply_markup=func_kb2(
-                                             lg_check3(back_menu_en, back_menu_ru, back_menu_uz, event.from_user),
-                                             event.from_user)
-                                         )
+
+    send_mg = await event.message.answer(
+        lg_check3('📤 Sending...', '📤 Отправка...', "📤 Jo'natilmoqda...", event.from_user),
+        reply_markup=func_kb2(back_menu, event.from_user))
     await manager.done()
     async with ChatActionSender.upload_document(bot=event.bot, chat_id=event.message.chat.id):
         await manager.start(Unit.send_file, data=data_dict)
-    send_mg_id = send_mg.message_id
-    await event.bot.delete_message(event.message.chat.id, send_mg_id)
+    with suppress(TelegramBadRequest):
+        await event.bot.delete_message(event.message.chat.id, send_mg.message_id)
+
     await event.message.answer(lg_check3('🔘 Choose button', '🔘 Выберите кнопку', "🔘 Tugmani bosing", event.from_user),
-                               reply_markup=func_kb2(
-                                   lg_check3(back_menu_en, back_menu_ru, back_menu_uz, event.from_user),
-                                   event.from_user)
-                               )
-    await event.bot.send_message(group, f'#file\n{event.from_user.first_name} - @{event.from_user.username} - {event.from_user.id}')
-    os.remove(file_name)
-
-
-async def send_func(manager: DialogManager, checked, book, lang):
-    pdf_setup(checked, book, lang)
+                               reply_markup=func_kb2(back_menu, event.from_user))
+    with suppress(OSError):
+        os.remove(file_name)
 
 
 async def on_dialog_start(start_data: Any, dialog_manager: DialogManager):
-    widget = dialog_manager.find('lang')
-    await widget.set_checked('en')
+    await dialog_manager.find('lang').set_checked('en')
 
 
 dialog = Dialog(
     Window(
-        Format('{book_name} {start_data[0]}:'),
+        Format('{book_name} {start_data[book]}:'),
         Radio(
             Format("🔘 {item[0]}"),
             Format("⚪️ {item[0]}"),

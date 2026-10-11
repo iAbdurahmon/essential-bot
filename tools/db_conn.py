@@ -1,28 +1,22 @@
+import logging
+
 import psycopg2
 from pymongo import MongoClient
 
-dbname = 'essential'
-user = 'bardo_admin'
-password = '0046'
-host = 'localhost'
-# 45.10.161.251
+from config_reader import config
 
-try:
-    conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
-    cur = conn.cursor()
-    print('Connected')
-except Exception as e:
-    print(e)
+logger = logging.getLogger(__name__)
 
+conn = psycopg2.connect(
+    database=config.db_name,
+    user=config.db_user,
+    password=config.db_password.get_secret_value(),
+    host=config.db_host,
+    port=config.db_port
+)
+cur = conn.cursor()
+logger.info('postgres connected: %s@%s', config.db_name, config.db_host)
 
-username = "admin"  #
-password = "41964196"  #
-hostname = "localhost"  #
-port = 27017  #
-auth_db = "admin"  #
-connection_string = f"mongodb://{username}:{password}@{hostname}:{port}/{auth_db}"  #
-
-client = MongoClient(connection_string)  #
-db = client['essential']  #
-collection = db['users']  #
-
+client = MongoClient(config.mongo_uri)
+db = client[config.mongo_db]
+collection = db['users']

@@ -9,7 +9,6 @@ from utils.states import *
 from handlers.start import start
 from funcs import list_book, book, profile_start
 from Poll import polling
-from handlers.translator import translator_lg_from
 
 router = Router()
 
@@ -43,7 +42,6 @@ async def mix_start_back(message: Message, state: FSMContext):
 
 @router.message(Poll_state.dialog_started, F.text.in_(backs))
 async def quiz_back(message: Message, state: FSMContext, dialog_manager: DialogManager):
-    # unit_selected.clear()
     await dialog_manager.reset_stack()
     await state.clear()
     await polling.book(message, state)
@@ -54,6 +52,3 @@ async def to_profile(message: Message, state: FSMContext):
     await state.set_state(Func1.choose_option)
     await profile_start(message, state)
 
-# @router.message(Status.on, F.text.in_(backs))
-# async def quiz_result(message: Message, state: FSMContext):
-#     await polling.book()

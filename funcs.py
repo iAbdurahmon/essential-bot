@@ -7,7 +7,7 @@ from utils.states import Func1, Profile
 from data_small import *
 from lg_messages.func import lg_check, lg_checker2
 from Poll import polling
-from tools.db_conn import cur
+from tools.posts import last_post
 
 router = Router()
 
@@ -48,40 +48,30 @@ async def book(message: Message, state: FSMContext):
 
 
 @router.message(Func1.choose_book_or_list, F.text.in_(btn_b_l_all), F.text.in_(btn_b_l_list))
-async def list(message: Message, bot: Bot):
+async def word_list(message: Message, state: FSMContext):
     await message.answer(lg_check(
         "🛠️ The word list is under development.\nSoon...",
         "🛠️ Список слов находится в разработке.\nСкоро...",
         "🛠️ Soʻzlar roʻyxati ishlab chiqilmoqda.\nTez orada...",
         message
     ))
-    text = f"#list\n{message.from_user.username} - {message.from_user.id} - {message.from_user.first_name}"
-    await bot.send_message(group, text)
 
 
 async def bot_version(message: Message, bot: Bot):
-    lg = lg_checker2(message.from_user.id)
-    cur.execute('SELECT * FROM sets ORDER BY id DESC LIMIT 3')
-    result = cur.fetchall()
-    result_uz = result[0]
-    result_ru = result[1]
-    result_en = result[2]
-    version_id = result_uz[2]
-    update_msg_id_en = int(result_en[3])
-    update_msg_id_ru = int(result_ru[3])
-    update_msg_id_uz = int(result_uz[3])
+    version, msg_ids = last_post('sets')
+    if not msg_ids:
+        await message.answer(lg_check('No changelog published yet.',
+                                      'Список изменений ещё не опубликован.',
+                                      "O'zgarishlar ro'yxati hali chiqmagan.", message))
+        return
     await message.answer(lg_check(
-        f"<b>Bot Version: {version_id}</b>",
-        f"<b>Версия Бота: {version_id}</b>",
-        f"<b>Bot Versiyasi: {version_id}</b>",
+        f"<b>Bot Version: {version}</b>",
+        f"<b>Версия Бота: {version}</b>",
+        f"<b>Bot Versiyasi: {version}</b>",
         message
     ), parse_mode='html')
-    if lg == 'en':
-        await bot.copy_message(message.from_user.id, group, update_msg_id_en)
-    if lg == 'ru':
-        await bot.copy_message(message.from_user.id, group, update_msg_id_ru)
-    if lg == 'uz':
-        await bot.copy_message(message.from_user.id, group, update_msg_id_uz)
+    lg = lg_checker2(message.from_user.id)
+    await bot.copy_message(message.from_user.id, group, msg_ids.get(lg, msg_ids['en']))
 
 
 async def invite_link(message: Message, bot: Bot):
@@ -99,8 +89,5 @@ async def invite_link(message: Message, bot: Bot):
         message
     ))
     await message.answer(share_text, parse_mode='MARKDOWN')
-    text = f"#invite\n{message.from_user.username} - {message.from_user.id} - {message.from_user.first_name}"
-    await bot.send_message(group, text)
-    await bot.send_message(group, share_text, parse_mode='MARKDOWN')
 
 

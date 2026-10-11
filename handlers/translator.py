@@ -1,20 +1,30 @@
 import os
-from aiogram import F, Router, Bot
+import logging
+
+from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.types.reply_keyboard_remove import ReplyKeyboardRemove
 
-from easygoogletranslate import EasyGoogleTranslate
 from google.cloud import translate
 
 from keyboards.reply import *
 from lg_messages.func import lg_check, lg_checker2
 from utils.states import Translate, Func1
 from data_small import *
-from tools.db_conn import cur, conn
+from config_reader import config
 
 router = Router()
-translator = EasyGoogleTranslate()
+logger = logging.getLogger(__name__)
+
+if config.google_credentials:
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.google_credentials
+
+
+def translate_client():
+    if not hasattr(translate_client, 'client'):
+        translate_client.client = translate.TranslationServiceClient()
+    return translate_client.client
 
 
 @router.message(Func1.choose_option, F.text.in_(trans_btn_all))
@@ -82,40 +92,30 @@ async def translate_text(message: Message, state: FSMContext):
 
 
 @router.message(Translate.text, F.text)
-async def translator_func(message: Message, bot: Bot, state: FSMContext):
+async def translator_func(message: Message, state: FSMContext):
     data = await state.get_data()
-    from_lg = data.get('from_lg')
-    to_lg = data.get('to_lg')
-    text = message.text
-    from_lg = lg_db_from.get(from_lg)
-    to_lg = lg_db_to.get(to_lg)
+    # None for the "Detect language" button: the API then detects the source itself
+    from_lg = lg_db_from.get(data.get('from_lg'))
+    to_lg = lg_db_to.get(data.get('to_lg'))
 
-    def detect_checker(from_lg_arg):
-        if from_lg_arg in detect_lg_text:
-            return None
-        else:
-            return from_lg
+    if not config.google_project:
+        await message.answer(lg_check("🛠️ The translator is not configured on this instance.",
+                                      "🛠️ Переводчик не настроен на этом сервере.",
+                                      "🛠️ Tarjimon bu serverda sozlanmagan.", message))
+        return
 
-    def translate_text_func(credentials_path, text, source_language, target_language):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
-        client = translate.TranslationServiceClient()
-        parent = f"projects/abdurahmon"
-        response = client.translate_text(
-            contents=[text],
-            source_language_code=source_language,
-            target_language_code=target_language,
-            parent=parent
+    try:
+        response = translate_client().translate_text(
+            contents=[message.text],
+            source_language_code=from_lg,
+            target_language_code=to_lg,
+            parent=f"projects/{config.google_project}"
         )
-        return response.translations[0].translated_text
-    credentials_path = 'abdurahmon-dfc180ec4c48.json'
-    text_to_translate = text
-    source_language = detect_checker(from_lg)
-    target_language = to_lg
-    result = translate_text_func(credentials_path, text_to_translate, source_language, target_language)
+    except Exception as e:
+        logger.exception('translate failed: %s -> %s', from_lg, to_lg)
+        await message.answer(lg_check("❌ Could not translate, try again later.",
+                                      "❌ Не удалось перевести, попробуйте позже.",
+                                      "❌ Tarjima qilolmadim, keyinroq urinib ko'ring.", message))
+        return
 
-    await message.answer(f"<b>{result}</b>")
-    await bot.send_message(group, f"#translator\n"
-                                  f"{result}\n"
-                                  f"{message.from_user.first_name}\n"
-                           f"@{message.from_user.username}\n"
-                           f"{message.from_user.id}")
+    await message.answer(f"<b>{response.translations[0].translated_text}</b>")

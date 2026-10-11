@@ -1,5 +1,7 @@
-admins = []
-group = -4634478647
+from config_reader import config
+
+admins = [config.admin_id]
+group = config.admin_group
 invite_coin = 30
 
 languages_en = ['🇬🇧 English', '🇷🇺 Russian', '🇺🇿 Uzbek']
@@ -85,13 +87,6 @@ book_ids_uz = {
     5: 'BQACAgQAAxkBAAMpZ4y0vFfrlhYy6J8CrBd1v9QjA0kAAgYSAAJu8GBSqYk58jVv8CA2BA',  ##
     6: 'BQACAgQAAxkBAAMqZ4y0vH4f0DOTg6W2V36tPYNK4lYAAgcSAAJu8GBSV4sJViwzfjc2BA',  ##
 }
-
-msg_id_en = 14496  #
-msg_id_ru = 14498  #
-msg_id_uz = 14500  #
-
-
-text_for_edit = {}
 
 # for user
 back_menu_en = ['🔙 Back', '🏠 Main Menu']

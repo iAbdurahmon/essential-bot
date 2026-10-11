@@ -1,0 +1,9 @@
+aiogram==3.13.1
+aiogram-dialog==2.2.0
+redis==5.0.8
+psycopg2-binary==2.9.9
+pymongo==4.8.0
+pydantic-settings==2.4.0
+pypdf==4.3.1
+pytz==2024.1
+google-cloud-translate==3.15.5
