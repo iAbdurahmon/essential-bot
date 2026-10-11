@@ -7,7 +7,7 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Multiselect, Group, Button, Row, Toggle
 from aiogram_dialog.widgets.text import Format
 
-from lg_messages.func import lg_check2, lg_checker2, lg_check3
+from lg_messages.func import lg_check3, lg_checker2
 from data_small import *
 from dialogs.dialog import russian_not_ready
 from dialogs.main_poll import QuizScene, router_poll
@@ -21,18 +21,18 @@ class Poll_manager(StatesGroup):
 
 async def get_data(**kwargs):
     user_info = kwargs.get('event_from_user')
-    send_message = await lg_check2('📝 Start Quiz-Test', "📝 Начать Тест-Викторину",
+    send_message = lg_check3('📝 Start Quiz-Test', "📝 Начать Тест-Викторину",
                                    "📝 Viktorina testini boshlash", user_info)
-    send_all_message = await lg_check2('📊 With algorithm', '📊 С алгоритмом', "📊 Algoritm bilan",
+    send_all_message = lg_check3('📊 With algorithm', '📊 С алгоритмом', "📊 Algoritm bilan",
                                        user_info)
-    book_message = await lg_check2('📖 Book', '📖 Книга', "📖 Kitob", user_info)
+    book_message = lg_check3('📖 Book', '📖 Книга', "📖 Kitob", user_info)
 
-    lg_en = await lg_check2('🇬🇧 English', '🇬🇧 Английский', '🇬🇧 Inglizcha', user_info)
-    lg_ru = await lg_check2('🇷🇺 Russian', '🇷🇺 Русский', '🇷🇺 Ruscha', user_info)
-    lg_uz = await lg_check2('🇺🇿 Uzbek', '🇺🇿 Узбекский', "🇺🇿 O'zbekcha", user_info)
+    lg_en = lg_check3('🇬🇧 English', '🇬🇧 Английский', '🇬🇧 Inglizcha', user_info)
+    lg_ru = lg_check3('🇷🇺 Russian', '🇷🇺 Русский', '🇷🇺 Ruscha', user_info)
+    lg_uz = lg_check3('🇺🇿 Uzbek', '🇺🇿 Узбекский', "🇺🇿 O'zbekcha", user_info)
 
-    from_text = await lg_check2("From", "С", 'dan', user_info)
-    to_text = await lg_check2("To", "На", "ga", user_info)
+    from_text = lg_check3("From", "С", 'dan', user_info)
+    to_text = lg_check3("To", "На", "ga", user_info)
 
     # Uzbek puts the case suffix after the language name, the other two before it
     if lg_checker2(user_info.id) == 'uz':
@@ -57,7 +57,7 @@ async def get_data(**kwargs):
 
 async def algorithm(callback: CallbackQuery, button: Button,
                     dialog_manager: DialogManager):
-    await callback.answer(await lg_check2(
+    await callback.answer(lg_check3(
         "🛠️ A Quiz-Test with an algorithm that will help you quickly learn words is under development.\nSoon...",
         "🛠️ Квест-Тест с алгоритмом который поможет быстро выучить слова находится в стадии разработки.\nСкоро...",
         "🛠️ So'zlarni tezda o'rganishga yordam beradigan algoritmga ega Quiz-Test ishlab chiqilmoqda.\nTez orada...",
@@ -69,7 +69,7 @@ async def start_poll(callback: CallbackQuery, button: Button,
                      dialog_manager: DialogManager):
     units = dialog_manager.find('units_poll').get_checked()
     if not units:
-        unit_error = await lg_check2("❌ Please select at least one unit!",
+        unit_error = lg_check3("❌ Please select at least one unit!",
                                      "❌ Пожалуйста, выберите хотя бы один unit",
                                      "❌ Iltimos, kamida bitta unit'ni tanlang",
                                      callback.from_user)
@@ -83,7 +83,7 @@ async def start_poll(callback: CallbackQuery, button: Button,
         checked_to = lang if lang != 'en' else 'uz'
 
     if checked_from == checked_to:
-        text = await lg_check2("You can't use the same language on both sides!",
+        text = lg_check3("You can't use the same language on both sides!",
                                'Нельзя использовать один и тот же язык с двух сторон!',
                                "Bir xil tilni ikki tomonda ishlatib bo'lmaydi!", callback.from_user)
         await callback.answer(text, show_alert=True)
@@ -91,7 +91,7 @@ async def start_poll(callback: CallbackQuery, button: Button,
 
     # the word tables are English-centred: ru <-> uz pairs have no data behind them
     if 'en' not in (checked_from, checked_to):
-        text = await lg_check2("One of the two languages has to be English!",
+        text = lg_check3("One of the two languages has to be English!",
                                'Один из двух языков должен быть английским!',
                                "Ikki tildan biri ingliz tili bo'lishi kerak!", callback.from_user)
         await callback.answer(text, show_alert=True)

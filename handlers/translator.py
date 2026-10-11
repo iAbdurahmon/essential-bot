@@ -111,7 +111,7 @@ async def translator_func(message: Message, state: FSMContext):
             target_language_code=to_lg,
             parent=f"projects/{config.google_project}"
         )
-    except Exception as e:
+    except Exception:
         logger.exception('translate failed: %s -> %s', from_lg, to_lg)
         await message.answer(lg_check("❌ Could not translate, try again later.",
                                       "❌ Не удалось перевести, попробуйте позже.",

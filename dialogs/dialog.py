@@ -16,8 +16,8 @@ from aiogram_dialog.widgets.kbd import Multiselect, Group, Button, Row, Radio
 from aiogram_dialog.widgets.text import Format, Multi, Progress
 from aiogram_dialog.widgets.media import StaticMedia
 
-from lg_messages.func import lg_check2, lg_check3
-from tools.pdf import pdf_setup, pdf_namer
+from lg_messages.func import lg_check3
+from tools.pdf import pdf_setup
 from data_small import *
 from keyboards.reply import func_kb2
 
@@ -35,15 +35,15 @@ class Unit(StatesGroup):
 
 async def get_data(**kwargs):
     user_info = kwargs.get('event_from_user')
-    send_message = await lg_check2('📤 Send the Units', "📤 Отправить Unit",
+    send_message = lg_check3('📤 Send the Units', "📤 Отправить Unit",
                                    "📤 Unitlarni jo'natish", user_info)
-    send_all_message = await lg_check2('📗 Send the whole book', '📗 Отправить всю книгу', "📗 Butun kitobni yuborish",
+    send_all_message = lg_check3('📗 Send the whole book', '📗 Отправить всю книгу', "📗 Butun kitobni yuborish",
                                        user_info)
-    book_message = await lg_check2('📖 Book', '📖 Книга', "📖 Kitob", user_info)
+    book_message = lg_check3('📖 Book', '📖 Книга', "📖 Kitob", user_info)
 
-    lg_en = await lg_check2('English', 'Английский', 'Inglizcha', user_info)
-    lg_ru = await lg_check2('Russian', 'Русский', 'Ruscha', user_info)
-    lg_uz = await lg_check2('Uzbek', 'Узбекский', "O'zbekcha", user_info)
+    lg_en = lg_check3('English', 'Английский', 'Inglizcha', user_info)
+    lg_ru = lg_check3('Russian', 'Русский', 'Ruscha', user_info)
+    lg_uz = lg_check3('Uzbek', 'Узбекский', "O'zbekcha", user_info)
 
     return {"buttons_data": buttons_data,
             "lg": send_message,
@@ -54,7 +54,7 @@ async def get_data(**kwargs):
 
 async def get_bg_data(dialog_manager: DialogManager, **kwargs):
     user_info = kwargs.get('event_from_user')
-    wait_message = await lg_check2('⏳ Preparation...', '⏳ Подготовка...', "⏳ Tayyorlanmoqda...", user_info)
+    wait_message = lg_check3('⏳ Preparation...', '⏳ Подготовка...', "⏳ Tayyorlanmoqda...", user_info)
     return {
         "progress": dialog_manager.dialog_data.get("progress", 0),
         "wait_mg": wait_message,
@@ -75,7 +75,7 @@ async def send_getter(dialog_manager: DialogManager, **kwargs):
 async def russian_not_ready(event: CallbackQuery, book: str, lang: str) -> bool:
     if book in RU_READY_BOOKS or lang != 'ru':
         return False
-    text = await lg_check2(
+    text = lg_check3(
         "Since we do the Russian translation manually, at the moment only operations from the Book 1 and Book 2 work.\n"
         "Follow the news on the channel: @essentialwordchannel",
         'Так как русский перевод мы делаем вручную, на данный момент только работают операции с первой и второй книги.\n'
@@ -110,7 +110,7 @@ async def ok_button(event: CallbackQuery, button: Button,
 
     checked = manager.find('units').get_checked()
     if not checked:
-        unit_error = await lg_check2("❌ Please select at least one unit!",
+        unit_error = lg_check3("❌ Please select at least one unit!",
                                      "❌ Пожалуйста, выберите хотя бы один unit",
                                      "❌ Iltimos, kamida bitta unit'ni tanlang",
                                      event.from_user)

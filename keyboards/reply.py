@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, User
 from lg_messages.func import lg_check, lg_check3
-from aiogram.fsm.context import FSMContext
 
 
 def language_selection(items: list[str]) -> ReplyKeyboardMarkup:

@@ -1,72 +1,39 @@
-from tools.db_conn import cur, conn
 from aiogram.types import Message, User
-from lg_messages.start_messages import hello_mg
 
+from tools.db_conn import cur
 
-def lg_check(eng, rus, uzb, message: Message):
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s', (str(message.from_user.id),))
-    lg = cur.fetchall()
-    if not lg:
-        lg = message.from_user.language_code
-    else:
-        for i in lg:
-            lg = i[0]
-    if lg == 'en':
-        return eng
-    elif lg == 'ru':
-        return rus
-    elif lg == 'uz':
-        return uzb
-    else:
-        return f'{hello_mg.get(message.from_user.language_code)}, <b>{message.from_user.first_name}</b>!'
-
-
-async def lg_check2(eng, rus, uzb, user_info):
-    user_id = user_info.id
-    first_name = user_info.first_name
-    language_code = user_info.language_code
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s', (str(user_id),))
-    lg = cur.fetchall()
-    for i in lg:
-        lg = i[0]
-    if lg == 'en':
-        return eng
-    elif lg == 'ru':
-        return rus
-    elif lg == 'uz':
-        return uzb
-    else:
-        return f'{hello_mg.get(language_code)}, <b>{first_name}</b>!'
-
-
-def lg_check3(eng, rus, uzb, from_user: User):
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s', (str(from_user.id),))
-    lg = cur.fetchall()
-    for i in lg:
-        lg = i[0]
-    if lg == 'en':
-        return eng
-    elif lg == 'ru':
-        return rus
-    elif lg == 'uz':
-        return uzb
-    else:
-        return f'{hello_mg.get(from_user.language_code)}, <b>{from_user.first_name}</b>!'
-
-
-def lg_check4_lg_id(eng, rus, uzb, lg):
-    if lg == 'en':
-        return eng
-    elif lg == 'ru':
-        return rus
-    elif lg == 'uz':
-        return uzb
+# A reply is built from a dozen translated strings and every one of them used to cost
+# a SELECT. The language of a user changes only through the handlers below, so it is
+# cached here and dropped explicitly when it does.
+_lang_cache = {}
 
 
 def lg_checker2(user_id):
-    cur.execute('SELECT lg FROM users WHERE tg_id = %s', (str(user_id),))
-    lg = cur.fetchall()
-    lg_user = None
-    for i in lg[0]:
-        lg_user = i
-    return lg_user
+    user_id = str(user_id)
+    if user_id not in _lang_cache:
+        cur.execute('SELECT lg FROM users WHERE tg_id = %s', (user_id,))
+        row = cur.fetchone()
+        _lang_cache[user_id] = row[0] if row else None
+    return _lang_cache[user_id]
+
+
+def drop_lang_cache(user_id):
+    _lang_cache.pop(str(user_id), None)
+
+
+def lg_check4_lg_id(eng, rus, uzb, lg):
+    if lg == 'ru':
+        return rus
+    if lg == 'uz':
+        return uzb
+    return eng
+
+
+def lg_check(eng, rus, uzb, message: Message):
+    lg = lg_checker2(message.from_user.id) or message.from_user.language_code
+    return lg_check4_lg_id(eng, rus, uzb, lg)
+
+
+def lg_check3(eng, rus, uzb, from_user: User):
+    lg = lg_checker2(from_user.id) or from_user.language_code
+    return lg_check4_lg_id(eng, rus, uzb, lg)

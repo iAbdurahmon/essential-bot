@@ -1,28 +1,13 @@
 from datetime import datetime
-from threading import Timer
+
 import pytz
 
-# time = None
-# def timefunc():
-#     current_time = datetime.now()
-#     tz_tashkent = pytz.timezone('Asia/Tashkent')
-#     current_time_tashkent = current_time.astimezone(tz_tashkent)
-#     today = current_time_tashkent.strftime('%d.%m.%y')
-#     time = current_time_tashkent.strftime('%H:%M')
-#     t = Timer(1, timefunc)
-#     t.start()
-#     return time
-# timefunc()
+TIMEZONE = 'Asia/Tashkent'
 
 
 def timefunc(which):
-    current_time = datetime.now()
-    tz_tashkent = pytz.timezone('Asia/Tashkent')
-    current_time_tashkent = current_time.astimezone(tz_tashkent)
-    today = current_time_tashkent.strftime('%d.%m.%y')
-    time = current_time_tashkent.strftime('%H:%M')
+    current_time = datetime.now(pytz.timezone(TIMEZONE))
     if which == 'today':
-        return today
+        return current_time.strftime('%d.%m.%y')
     elif which == 'time':
-        return time
-
+        return current_time.strftime('%H:%M')

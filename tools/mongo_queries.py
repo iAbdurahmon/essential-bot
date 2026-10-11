@@ -16,7 +16,8 @@ def select_coin(tg_id, book, unit):
     ]
 
     result = list(collection.aggregate(pipeline))
-
+    if not result:
+        return None
     return result[0].get('coins')
 
 
@@ -39,16 +40,6 @@ def update_coins(tg_id, book, unit, coins):
     ]
     result = collection.update_one(filter_coin, update, array_filters=array_filters)
     return result
-
-
-def update_result_checker(result_id):
-    if not isinstance(result_id, int):
-        if result_id.modified_count == 1:
-            return 'updated'
-        else:
-            return f"not updated ({result_id.raw_result})"
-    else:
-        return result_id
 
 
 def insert_new(tg_id):

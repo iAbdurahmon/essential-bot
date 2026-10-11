@@ -17,7 +17,7 @@ from keyboards.reply import language_selection
 from keyboards.reply import main_buttons
 from utils.states import Form, Func1
 from tools.db_conn import conn, cur
-from lg_messages.func import lg_check, lg_checker2, lg_check4_lg_id
+from lg_messages.func import lg_check, lg_checker2, lg_check4_lg_id, drop_lang_cache
 from tools.mongo_queries import *
 
 router = Router()
@@ -146,6 +146,7 @@ async def language(message: Message, state: FSMContext, bot: Bot):
         cur.execute('UPDATE users SET lg = %s, status = %s WHERE tg_id = %s',
                     (lg_value, 1, str(message.from_user.id)))
         conn.commit()
+        drop_lang_cache(message.from_user.id)
         await message.answer(
             text=lg_check('✅ You have successfully updated the language!',
                           '✅ Вы успешно обновили язык!',
@@ -161,6 +162,7 @@ async def language(message: Message, state: FSMContext, bot: Bot):
                 (message.from_user.first_name, message.from_user.username,
                  message.from_user.id, today_time, lg_value, 1))
     conn.commit()
+    drop_lang_cache(message.from_user.id)
     insert_new(message.from_user.id)
     await message.answer(text=lg_check('✅ You have successfully selected the language!',
                                        '✅ Вы успешно выбрали язык!',
