@@ -31,6 +31,12 @@ async def unit_backs(message: Message, state: FSMContext, dialog_manager: Dialog
     await book(message, state)
 
 
+@router.message(WordList.choose_book, F.text.in_(backs))
+@router.message(WordList.choose_unit, F.text.in_(backs))
+async def word_list_back(message: Message, state: FSMContext):
+    await list_book(message, state)
+
+
 @router.message(Func1.choose_book_or_list, F.text.in_(backs))
 @router.message(Poll_state.dialog_start, F.text.in_(backs))
 @router.message(Translate.from_lg, F.text.in_(backs))

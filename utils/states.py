@@ -3,10 +3,6 @@ from aiogram.fsm.state import StatesGroup, State
 
 class Form(StatesGroup):
     language = State()
-    about = State()
-    main_button = State()
-    word_list = State()
-    # many doesn't work state
 
 
 class Func1(StatesGroup):
@@ -33,6 +29,11 @@ class Translate(StatesGroup):
 class Profile(StatesGroup):
     profile_start = State()
     rating = State()
+
+
+class WordList(StatesGroup):
+    choose_book = State()
+    choose_unit = State()
 
 
 class Status(StatesGroup):

@@ -62,6 +62,7 @@ def dp_setup():
                        polling.router,
                        translator.router,
                        profile.router,
+                       word_list.router,
                        dialog.dialog,
                        poll.dialog,
                        main_poll.router_poll)

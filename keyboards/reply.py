@@ -93,31 +93,6 @@ def func_kb2(items: list[str], from_user: User) -> ReplyKeyboardMarkup:
         return keyboard
 
 
-def func_kb_no_message(items: list[str]) -> ReplyKeyboardMarkup:
-    if len(items) % 2 == 1:  # doesn't divisible by two
-        mid = (len(items) - 1) // 2
-        row1 = [KeyboardButton(text=item) for item in items[:mid]]
-        row2 = [KeyboardButton(text=item) for item in items[mid:-1]]
-        row3 = [KeyboardButton(text=items[-1])]
-
-        keyboard = ReplyKeyboardMarkup(keyboard=[row1, row2, row3],
-                                       resize_keyboard=True
-                                       )
-
-        return keyboard
-    elif len(items) % 2 == 0:  # divisible by two with one time keyboard
-        mid = (len(items) - 2) // 2
-        row1 = [KeyboardButton(text=item) for item in items[:mid]]
-        row2 = [KeyboardButton(text=item) for item in items[mid:-2]]
-        row3 = [KeyboardButton(text=item) for item in items[-2:]]
-
-        keyboard = ReplyKeyboardMarkup(keyboard=[row1, row2, row3],
-                                       resize_keyboard=True
-                                       )
-
-        return keyboard
-
-
 def buttons3(items: list[str], message: Message) -> ReplyKeyboardMarkup:
     thr = len(items) // 3 + len(items) // 3
     row1 = [KeyboardButton(text=item) for item in items[:thr]]
@@ -130,18 +105,6 @@ def buttons3(items: list[str], message: Message) -> ReplyKeyboardMarkup:
                                        'Выберите вариант',
                                        'Variantni tanlang', message)
                                    )
-    return keyboard
-
-
-def buttons3_no_message(items: list[str]) -> ReplyKeyboardMarkup:
-    thr = len(items) // 3 + len(items) // 3
-    row1 = [KeyboardButton(text=item) for item in items[:thr]]
-    row2 = [KeyboardButton(text=item) for item in items[thr:]]
-
-    keyboard = ReplyKeyboardMarkup(keyboard=[row1, row2],
-                                   resize_keyboard=True
-                                   )
-
     return keyboard
 
 

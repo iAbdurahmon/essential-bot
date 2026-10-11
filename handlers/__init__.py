@@ -1,1 +1,1 @@
-from . import start, user_commands, back_handlers, translator, profile, config_handlers, all_handler
+from . import start, user_commands, back_handlers, translator, profile, config_handlers, all_handler, word_list

@@ -47,16 +47,6 @@ async def book(message: Message, state: FSMContext):
     await state.set_state(Func1.choose_book)
 
 
-@router.message(Func1.choose_book_or_list, F.text.in_(btn_b_l_all), F.text.in_(btn_b_l_list))
-async def word_list(message: Message, state: FSMContext):
-    await message.answer(lg_check(
-        "🛠️ The word list is under development.\nSoon...",
-        "🛠️ Список слов находится в разработке.\nСкоро...",
-        "🛠️ Soʻzlar roʻyxati ishlab chiqilmoqda.\nTez orada...",
-        message
-    ))
-
-
 async def bot_version(message: Message, bot: Bot):
     version, msg_ids = last_post('sets')
     if not msg_ids:
