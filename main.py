@@ -13,6 +13,7 @@ from aiogram.client.default import DefaultBotProperties
 import funcs
 
 from config_reader import config
+from tools.db_conn import pool
 from handlers import *
 from Funcs import books
 from Poll import polling
@@ -80,9 +81,17 @@ async def main():
         token=config.bot_token.get_secret_value(),
         default=DefaultBotProperties(parse_mode='HTML')
     )
-    await bot.delete_webhook(drop_pending_updates=True)
-    logger.info('bot started')
-    await dp.start_polling(bot)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        logger.info('bot started')
+        await dp.start_polling(bot)
+    finally:
+        # aiogram handles SIGTERM itself and returns from start_polling, so this runs
+        # on a kill as well as on Ctrl+C: hand the Postgres connections back and
+        # close the HTTP session instead of leaving them to the process teardown.
+        await bot.session.close()
+        pool.closeall()
+        logger.info('bot stopped')
 
 
 if __name__ == "__main__":
@@ -90,4 +99,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info('bot stopped')
+        pass
