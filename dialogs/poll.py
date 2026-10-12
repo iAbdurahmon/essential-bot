@@ -10,7 +10,6 @@ from aiogram_dialog.widgets.text import Format
 from lg_messages.func import lg_check3, lg_checker2
 from data_small import *
 from dialogs.dialog import russian_not_ready
-from dialogs.main_poll import QuizScene, router_poll
 from utils.states import *
 from keyboards.reply import buttons3_custom_no_message
 
@@ -127,8 +126,6 @@ async def start_poll(callback: CallbackQuery, button: Button,
                                        lg_check3('🔙 Back', '🔙 Назад', '🔙 Orqaga', callback.from_user),
                                        lg_check3('🏠 Main Menu', '🏠 Главное Меню', '🏠 Asosiy Menyu', callback.from_user)
                                        ]))
-
-    router_poll.message.register(QuizScene.as_handler(), Poll_state.dialog_started)
 
     await dialog_manager.done()
 

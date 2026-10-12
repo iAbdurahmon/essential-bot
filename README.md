@@ -101,6 +101,23 @@ by three messages — English, Russian, Uzbek — and the bot saves their `messa
 `/send` it copies the matching one to every user, so formatting, media and buttons survive
 untouched. `/about_update` and `/newsletter` work the same way against their own tables.
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The handlers are driven through the real `Dispatcher` with a mocked Bot API session
+(`tests/mocked.py`), which answers calls locally and records them. So a test feeds an
+`Update` the way Telegram would and then asserts on what the bot tried to send — the
+quiz tests play a whole round: receive the poll, answer it, press Stop, and check the
+score and the coins that ended up in the database.
+
+The suite talks to real PostgreSQL and MongoDB, using ids outside the Telegram range and
+cleaning up after itself. Mongo is cleaned too, not just Postgres: the per-unit balances
+decide whether a quiz pays out, so a leftover document changes what the next test earns.
+
 ## Layout
 
 ```
@@ -114,7 +131,8 @@ keyboards/           reply and inline keyboard builders
 lg_messages/         language resolution and the cached lookup behind it
 middlewares/         last-seen tracking
 tools/               database connections, PDF merging, Mongo queries, time helpers
-db/                  schema and demo data
+db/                  schema, migrations and demo data
+tests/               handler and quiz tests against a mocked Bot API
 ```
 
 ## A note on the content

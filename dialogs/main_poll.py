@@ -13,10 +13,11 @@ from aiogram.types import Message, PollAnswer, User
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from tools.db_conn import fetch_all, fetch_value, execute
-from tools.mongo_queries import update_coins, select_coin
+from tools.mongo_queries import update_coins, select_coin, ensure_balance
 from data_small import *
 from lg_messages.func import lg_check4_lg_id, lg_checker2
 from keyboards.reply import row1
+from utils.states import Poll_state
 from dialogs.funcs_dialog import top_all_checker, notify_overtaken
 
 router_poll = Router()
@@ -126,6 +127,7 @@ class QuizScene(Scene, state="quiz"):
                                     lg_reductions[settings['to']])
         if not questions:
             return False
+        ensure_balance(user.id)
         await state.update_data(questions=questions, answers={}, start_time=time.time(),
                                 lg=lg_checker2(user.id),
                                 book=settings['book'], units=settings['units'])
@@ -324,3 +326,7 @@ class QuizScene(Scene, state="quiz"):
                               "📈 Ваше место в Топ-10: /top10",
                               "📈 Top 10 dagi joyingiz: /top10", lg)
         return f"{head}\n\n<i>{balance}\n{passed_text}{top}</i>"
+
+
+# registered once at import: doing it per quiz appended a duplicate handler every time
+router_poll.message.register(QuizScene.as_handler(), Poll_state.dialog_started)

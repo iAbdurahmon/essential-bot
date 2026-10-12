@@ -47,8 +47,10 @@ def logging_setup():
     logging.getLogger('aiogram_dialog').setLevel(logging.WARNING)
 
 
-def dp_setup():
-    storage = RedisStorage.from_url(config.redis_url, key_builder=DefaultKeyBuilder(with_destiny=True))
+def dp_setup(storage=None):
+    if storage is None:
+        storage = RedisStorage.from_url(config.redis_url,
+                                        key_builder=DefaultKeyBuilder(with_destiny=True))
     dp = Dispatcher(storage=storage,
                     events_isolation=SimpleEventIsolation())
     dp.message.middleware.register(IsOnline())

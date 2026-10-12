@@ -42,6 +42,24 @@ def update_coins(tg_id, book, unit, coins):
     return result
 
 
+def empty_balance():
+    return [{"title": f"book{i}",
+             "units": [{"unit_number": j, "coins": 0} for j in range(1, 31)]}
+            for i in range(1, 7)]
+
+
+def ensure_balance(tg_id):
+    # Users who registered before the per-unit balances existed have no document.
+    # Without one select_coin finds nothing, old_coins stays 0, and every repeat of
+    # the same quiz pays out again. Used to be fixed by an admin backfill command.
+    doc = collection.find_one({"tg_id": tg_id}, {"balance": 1})
+    if doc and doc.get("balance"):
+        return False
+    collection.update_one({"tg_id": tg_id}, {"$set": {"balance": empty_balance()}}, upsert=True)
+    logger.info('created a missing balance document for %s', tg_id)
+    return True
+
+
 def insert_new(tg_id):
     row = fetch_one('SELECT id, name, username, tg_id, created_on, lg FROM users WHERE tg_id = %s',
                     (tg_id,))
@@ -55,14 +73,9 @@ def insert_new(tg_id):
             "lg": row[5]
         })
 
-    new_posts = []
-    for i in range(1, 7):
-        units = [{"unit_number": j, "coins": 0} for j in range(1, 31)]
-        new_posts.append({"title": f"book{i}", "units": units})
-
     result = collection.update_one(
         {"tg_id": tg_id},
-        {"$set": {"balance": new_posts}},
+        {"$set": {"balance": empty_balance()}},
         upsert=True
     )
 
