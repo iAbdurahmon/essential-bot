@@ -1,7 +1,10 @@
 # secrets
 .env
+# the Google service-account key lives in the project root; blanket-ignore json so a
+# new key can never be committed by accident, and allow data files explicitly
 *.json
 !data/*.json
+!.github/**/*.json
 
 # book content (copyrighted, not for distribution)
 data/book_units/

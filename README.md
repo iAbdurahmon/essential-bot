@@ -1,5 +1,7 @@
 # Essential Words Bot
 
+[![tests](https://github.com/iAbdurahmon/essential-bot/actions/workflows/tests.yml/badge.svg)](https://github.com/iAbdurahmon/essential-bot/actions/workflows/tests.yml)
+
 A Telegram bot for learning English vocabulary, built with aiogram 3. Written in 2024 and
 running as [@essentialwordstestbot](https://t.me/essentialwordstestbot): a three-language
 interface (English, Russian, Uzbek), a quiz built on native Telegram polls, a coin-based
@@ -59,8 +61,12 @@ Three ways of driving a conversation are used, each where it fits:
   re-enters itself on every answer (`wizard.retake`) and runs the scoring on exit, so the
   same code path handles finishing by running out of questions and finishing by pressing Stop.
 
-The quiz keeps its questions in FSM storage rather than in process memory, which is what
-lets a restart or two parallel sessions not interfere with each other.
+The quiz keeps its questions, answers and step in FSM storage rather than in process
+memory, so a restart does not lose them and two parallel sessions cannot read each other's
+state. One thing still goes through a module-level dict: the four settings picked in the
+dialog (languages, book, units) are handed to the scene that way, because
+`Scene.as_handler()` takes no arguments and the choice is made before the scene is
+entered. The dict holds four scalars per user and is cleared when the quiz ends.
 
 ## Running it
 
@@ -82,7 +88,8 @@ Without Docker you need PostgreSQL, MongoDB and Redis running locally:
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 createdb essential
-psql -d essential -f db/schema.sql -f db/seed_demo.sql
+psql -d essential -f db/schema.sql
+psql -d essential -f db/seed_demo.sql
 python main.py
 ```
 
@@ -118,6 +125,10 @@ The suite talks to real PostgreSQL and MongoDB, using ids outside the Telegram r
 cleaning up after itself. Mongo is cleaned too, not just Postgres: the per-unit balances
 decide whether a quiz pays out, so a leftover document changes what the next test earns.
 
+It runs on the demo vocabulary, so a fresh clone passes without the real book data. CI
+does exactly that — brings up Postgres and Mongo, loads `db/schema.sql` and
+`db/seed_demo.sql`, and runs the suite.
+
 ## Layout
 
 ```
@@ -133,7 +144,21 @@ middlewares/         last-seen tracking
 tools/               database connections, PDF merging, Mongo queries, time helpers
 db/                  schema, migrations and demo data
 tests/               handler and quiz tests against a mocked Bot API
+.github/workflows/   CI: loads the schema and runs the suite on Postgres and Mongo
 ```
+
+## Known gaps
+
+- **Quiz with an algorithm** — the button is there and says so; the spaced-repetition
+  scheduling behind it is not written yet. Per-unit progress is already stored, which is
+  the input it needs.
+- **The database driver is synchronous.** psycopg2 behind a thread-safe pool, called from
+  async handlers; a local query costs about a millisecond, so the loop stall is acceptable,
+  but `asyncpg` would be the correct answer and is a rewrite of every query.
+- **`data_small.py` holds the translations** as triples of string literals rather than
+  locale files. It works for three languages and would not for ten.
+- Whole books are served by hardcoded Telegram `file_id`s, which only stay valid for the
+  bot that uploaded them.
 
 ## A note on the content
 

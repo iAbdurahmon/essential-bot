@@ -2,6 +2,7 @@ from aiogram.fsm.storage.base import StorageKey
 
 from tests.conftest import TEST_USER_ID
 from tests.mocked import callback_update, make_user, message_update
+from tools.db_conn import fetch_all
 from utils.states import Func1, WordList
 
 
@@ -37,9 +38,13 @@ async def test_word_list_prints_the_words_of_a_unit(dp, bot, session, db_user):
 
     text = '\n'.join(session.sent_texts())
     assert 'Книга 1, Unit 1' in text
-    # 20 words per unit, numbered, English against the user's own language
-    assert '<b>20.</b>' in text, text
-    assert ' — ' in text
+
+    # every word of the unit has to be listed, numbered, English against the user's
+    # language; asserting on a word count would tie the test to how much data is loaded
+    rows = fetch_all('SELECT eng, rus FROM book1 WHERE unit = 1 ORDER BY id')
+    assert rows, 'book1 unit 1 has no words, is the seed applied?'
+    for num, (word, meaning) in enumerate(rows, 1):
+        assert f'<b>{num}.</b> {word} — {meaning}' in text, f'missing word {num}: {word}'
 
 
 async def test_word_list_answers_an_empty_unit_without_crashing(dp, bot, session, db_user):
