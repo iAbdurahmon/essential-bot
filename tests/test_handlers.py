@@ -69,3 +69,21 @@ async def test_language_falls_back_instead_of_greeting(dp, bot, session, db_user
     await dp.feed_update(bot, message_update(make_user(TEST_USER_ID, lg='fr'), '/balance'))
 
     assert 'Your balance' in session.sent_texts()[-1]
+
+
+async def test_translator_without_google_project_says_so(dp, bot, session, db_user, monkeypatch):
+    """README promises the bot stays usable without a Google Cloud project."""
+    from aiogram.fsm.storage.base import StorageKey
+    from config_reader import config
+    from utils.states import Translate
+
+    monkeypatch.setattr(config, 'google_project', '')
+    db_user(lg='en')
+    user = make_user(TEST_USER_ID)
+    key = StorageKey(bot_id=bot.id, chat_id=user.id, user_id=user.id)
+    await dp.storage.set_state(key, Translate.text)
+    await dp.storage.set_data(key, {'from_lg': 'From: 🇬🇧 English', 'to_lg': 'To: 🇺🇿 Uzbek'})
+
+    await dp.feed_update(bot, message_update(user, 'hello'))
+
+    assert 'not configured' in session.sent_texts()[-1]

@@ -1,0 +1,25 @@
+# .gitignore does not apply to docker build, and the Dockerfile does COPY . .
+# Secrets must never end up baked into an image.
+.env
+*.json
+!.github/**/*.json
+
+# Book content and generated files arrive through the volume, not the image.
+data/
+logs/
+
+# Build/runtime leftovers and things the image has no use for.
+.venv/
+venv/
+.git/
+.gitignore
+.gitattributes
+.github/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store
+README.md
+LICENSE
