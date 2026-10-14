@@ -16,9 +16,10 @@ services:
 
   mongo:
     image: mongo:7
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    # No auth on purpose: the container publishes no ports, so it is only reachable
+    # from this compose network. Setting MONGO_INITDB_ROOT_USERNAME without a
+    # password makes the image refuse to start, and .env.example leaves the Mongo
+    # credentials empty because a local instance usually has no auth either.
     volumes:
       - mongodata:/data/db
     healthcheck:
