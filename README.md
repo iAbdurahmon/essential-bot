@@ -101,6 +101,9 @@ PDF delivery expects the unit files under `data/book_units/` as `{lang}_{book}_{
 and whole books by their Telegram `file_id` in `data_small.py`. Neither is in the
 repository (see the note below); the rest of the bot works without them.
 
+Deploying this over the first version of the bot needs a schema migration and a Redis
+flush in the right order — see [DEPLOY.md](DEPLOY.md).
+
 ### How the changelog pipeline works
 
 The bot does not store post text. An admin sends `/update 1.3` in the admin group followed
