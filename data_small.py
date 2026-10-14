@@ -65,28 +65,13 @@ book_names_uz = ['📖 Kitob 1', '📖 Kitob 2', '📖 Kitob 3',
                  '📖 Kitob 4', '📖 Kitob 5', '📖 Kitob 6', '🔙 Orqaga', '🏠 Asosiy Menyu']
 book_names_all = book_names_uz + book_names_ru + book_names_en
 
-book_ids_en = {
-    1: 'BQACAgQAAxkBAAMkZ4y0cOWUmp-UyAee-2zl9tgVh9oAAv8RAAJu8GBS6AtDRPZNUX82BA',  ##
-    2: 'BQACAgQAAxkBAAMlZ4y0jzqtgcHG1BbwtS2YgWZ3D9wAAv0RAAJu8GBSm-bTdbtwyIE2BA',  ##
-    3: 'BQACAgQAAxkBAAMmZ4y0vJKW9TDPVq_FCFhQ9eqzVucAAgISAAJu8GBSDNeXuiB6atc2BA',  ##
-    4: 'BQACAgQAAxkBAAMnZ4y0vIO3V-jyV3qRKF-mnPGntJIAAgMSAAJu8GBSGuBgJSExA5E2BA',  ##
-    5: 'BQACAgQAAxkBAAMoZ4y0vDKn-tAAAfjV8Wuch6zuyDnoAAIEEgACbvBgUtfPnUbXwvclNgQ',  ##
-    6: 'BQACAgQAAxkBAAMxZ4y1ghYsZmYBpPSPKqLoF3wcp04AAxIAAm7wYFL-th38b1HFCzYE',  ##
-}
+# Whole books are sent by file_id: Telegram only accepts an id that was uploaded by
+# this same bot, so these are filled in per deployment. Send the file to the admin
+# group and the bot replies with the id to paste here.
+book_ids_en = {}
+book_ids_ru = {}
+book_ids_uz = {}
 
-book_ids_ru = {
-    1: 'BQACAgQAAxkBAAMvZ4y0vDd64kr1-hXK6MP1jw3aS_cAAnwTAAIo3lFRSUQVW2EJTok2BA',  ##
-    2: 'BQACAgIAAxkBAAMwZ4y0vI7pMhtd25oiMhQwhhNgCZsAAplKAAKS5TFLEJtmKaN3iJo2BA'  ##
-}
-
-book_ids_uz = {
-    1: 'BQACAgQAAxkBAAMrZ4y0vN5EemPhSoE6ljhVFNcKrDoAAgkSAAJu8GBS11IrHwnTzxw2BA',  ##
-    2: 'BQACAgQAAxkBAAMsZ4y0vCdqHZEwUWEe5XYVFYj_bEAAAgoSAAJu8GBSiPE4S5Jqgds2BA',  ##
-    3: 'BQACAgQAAxkBAAMtZ4y0vPPsgwIecRpir7TM5YnXZmwAAgsSAAJu8GBSdR2DuajBq0o2BA',  ##
-    4: 'BQACAgQAAxkBAAMuZ4y0vKsycZGyKJ4qI1lZPOuH4ewAAgwSAAJu8GBSmL6tRiXTXy42BA',  ##
-    5: 'BQACAgQAAxkBAAMpZ4y0vFfrlhYy6J8CrBd1v9QjA0kAAgYSAAJu8GBSqYk58jVv8CA2BA',  ##
-    6: 'BQACAgQAAxkBAAMqZ4y0vH4f0DOTg6W2V36tPYNK4lYAAgcSAAJu8GBSV4sJViwzfjc2BA',  ##
-}
 
 # for user
 back_menu_en = ['🔙 Back', '🏠 Main Menu']

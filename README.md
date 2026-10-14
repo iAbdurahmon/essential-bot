@@ -7,10 +7,9 @@ running as [@essentialwordstestbot](https://t.me/essentialwordstestbot): a three
 interface (English, Russian, Uzbek), a quiz built on native Telegram polls, a coin-based
 rating, PDF delivery of study units and a referral system.
 
-This repository is the cleaned-up public version of it — credentials moved out of the code,
-the duplicated parts collapsed, and the schema and setup written down so it can actually be
-run by someone else. `db/migrations/` has what it takes to bring a database created by the
-first version up to the current schema.
+This repository is the cleaned-up public version of it — credentials moved out of the
+code, the duplicated parts collapsed, and the schema and setup written down so it can
+actually be run by someone else.
 
 ## What it does
 
@@ -97,12 +96,11 @@ The translator is the only part that needs something external — a Google Cloud
 with the Translation API and a service-account key. Leave `GOOGLE_PROJECT` empty and the
 bot tells the user that the translator is not configured instead of failing.
 
-PDF delivery expects the unit files under `data/book_units/` as `{lang}_{book}_{unit}.pdf`,
-and whole books by their Telegram `file_id` in `data_small.py`. Neither is in the
-repository (see the note below); the rest of the bot works without them.
-
-Deploying this over the first version of the bot needs a schema migration and a Redis
-flush in the right order — see [DEPLOY.md](DEPLOY.md).
+PDF delivery expects the unit files under `data/book_units/`, named
+`{lang}_{book}_{unit}.pdf`. Whole books are sent by Telegram `file_id`, which is only
+valid for the bot that uploaded the file, so `book_ids_*` in `data_small.py` start empty:
+send a book to the admin group and the bot replies with the id to paste in. Neither is
+needed for the quiz, the word list or the rest of the bot.
 
 ### How the changelog pipeline works
 
@@ -145,7 +143,7 @@ keyboards/           reply and inline keyboard builders
 lg_messages/         language resolution and the cached lookup behind it
 middlewares/         last-seen tracking
 tools/               database connections, PDF merging, Mongo queries, time helpers
-db/                  schema, migrations and demo data
+db/                  schema and demo data
 tests/               handler and quiz tests against a mocked Bot API
 .github/workflows/   CI: loads the schema and runs the suite on Postgres and Mongo
 ```
@@ -160,8 +158,8 @@ tests/               handler and quiz tests against a mocked Bot API
   but `asyncpg` would be the correct answer and is a rewrite of every query.
 - **`data_small.py` holds the translations** as triples of string literals rather than
   locale files. It works for three languages and would not for ten.
-- Whole books are served by hardcoded Telegram `file_id`s, which only stay valid for the
-  bot that uploaded them.
+- Whole books are served by hardcoded Telegram `file_id`s rather than by uploading the
+  file, so they only stay valid for the bot that uploaded them.
 
 ## A note on the content
 
